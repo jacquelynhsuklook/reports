@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel Business Review — Klook</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --klook-red:  #FF5722;
+      --klook-dark: #1A1A2E;
+      --bg:         #F5F6FA;
+      --card:       #FFFFFF;
+      --border:     #E4E6EF;
+      --text:       #1A1A2E;
+      --muted:      #6B7280;
+      --green:      #10B981;
+      --red:        #EF4444;
+      --amber:      #F59E0B;
+      --blue:       #3B82F6;
+      --purple:     #8B5CF6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+    header {
+      background: var(--klook-dark); color: #fff;
+      padding: 0 32px; display: flex; align-items: center;
+      justify-content: space-between; height: 64px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-k {
+      width: 36px; height: 36px; border-radius: 8px; background: var(--klook-red);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; color: #fff;
+    }
+    .logo span { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+    .header-right { text-align: right; font-size: 13px; color: rgba(255,255,255,.7); }
+    .header-right strong { display: block; font-size: 15px; color: #fff; }
+
+    .hero {
+      background: linear-gradient(135deg, var(--klook-red) 0%, #FF8A65 100%);
+      color: #fff; padding: 28px 32px 24px;
+      display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .hero h1 { font-size: 26px; font-weight: 800; line-height: 1.2; }
+    .hero h1 span { display: block; font-size: 14px; font-weight: 400; opacity: .85; margin-bottom: 4px; }
+    .period-badge {
+      background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; white-space: nowrap;
+    }
+
+    main { padding: 28px 32px 48px; max-width: 1300px; margin: 0 auto; }
+    .section-title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.2px; color: var(--muted); margin: 32px 0 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── KPI Cards ─────────────────────────────────────────────── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+    .kpi-card {
+      background: var(--card); border-radius: 12px; padding: 18px 16px 14px;
+      border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.05);
+      position: relative; overflow: hidden;
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--klook-red);
+    }
+    .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 6px; }
+
+    /* MTD block */
+    .kpi-period-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--klook-red); margin-bottom: 4px; }
+    .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
+    .kpi-value sub { font-size: 13px; font-weight: 600; vertical-align: baseline; }
+    .kpi-comparisons { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+    .kpi-row { display: flex; align-items: center; justify-content: space-between; }
+    .kpi-row-label { font-size: 10px; color: var(--muted); }
+    .kpi-delta {
+      display: inline-flex; align-items: center; gap: 2px;
+      font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+    }
+    .kpi-delta.up   { color: var(--green); background: #ECFDF5; }
+    .kpi-delta.down { color: var(--red);   background: #FEF2F2; }
+    .kpi-delta.flat { color: var(--amber); background: #FFFBEB; }
+
+    /* YTD divider + block */
+    .kpi-divider { border: none; border-top: 1px dashed var(--border); margin: 10px 0 8px; }
+    .kpi-ytd-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--blue); margin-bottom: 4px; }
+    .kpi-ytd-value { font-size: 18px; font-weight: 700; line-height: 1; color: var(--text); }
+    .kpi-ytd-value sub { font-size: 11px; font-weight: 600; vertical-align: baseline; }
+    .kpi-ytd-comparisons { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+
+    /* ── Charts ─────────────────────────────────────────────────── */
+    .charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .charts-grid .full-width { grid-column: 1 / -1; }
+    .chart-card {
+      background: var(--card); border-radius: 12px; padding: 20px;
+      border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+    .chart-title { font-size: 14px; font-weight: 700; }
+    .chart-subtitle { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+    .chart-tag {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px;
+      padding: 3px 8px; border-radius: 20px; background: #FFF0ED; color: var(--klook-red); white-space: nowrap;
+    }
+    .data-note {
+      font-size: 10px; color: var(--muted); background: var(--bg); border-radius: 6px;
+      padding: 5px 10px; margin-top: 10px; border-left: 3px solid var(--border);
+    }
+
+    /* ── Competitor Selector ────────────────────────────────────── */
+    .comp-panel {
+      background: var(--card); border-radius: 12px; padding: 16px 20px;
+      border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.05);
+      margin-bottom: 0;
+    }
+    .comp-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .comp-panel-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .9px; color: var(--text); }
+    .comp-panel-hint { font-size: 11px; color: var(--muted); }
+    .comp-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    .comp-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px; border: 2px solid;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      background: transparent; transition: all .15s; font-family: inherit;
+    }
+    .comp-btn .comp-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .comp-btn.active { color: #fff; }
+    .comp-btn.active .comp-dot { background: rgba(255,255,255,.8); }
+    .comp-btn:not(.active) { background: transparent !important; }
+    .no-comps-msg {
+      font-size: 11px; color: var(--muted); font-style: italic; padding: 4px 0;
+    }
+
+    /* ── Insight box ─────────────────────────────────────────────── */
+    .insight-box {
+      background: linear-gradient(135deg, #FFF0ED, #FFF8F6);
+      border: 1px solid #FECDC2; border-left: 4px solid var(--klook-red);
+      border-radius: 10px; padding: 16px 20px; margin-top: 18px;
+    }
+    .insight-box h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--klook-red); margin-bottom: 8px; }
+    .insight-box ul { padding-left: 16px; }
+    .insight-box li { font-size: 13px; line-height: 1.7; }
+
+    /* ── MoM Tables ─────────────────────────────────────────────── */
+    .mom-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 14px; }
+    .mom-table th {
+      background: var(--bg); padding: 7px 10px; text-align: center;
+      font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .mom-table th:first-child { text-align: left; }
+    .mom-table td { padding: 7px 10px; text-align: center; border-bottom: 1px solid var(--border); }
+    .mom-table td:first-child { text-align: left; font-weight: 600; }
+    .mom-table tr:last-child td { border-bottom: none; }
+    .mom-table .col-market { background: #EFF6FF; }
+    .mom-table .col-comp   { background: #F5F3FF; }
+    .chg-up   { color: var(--green); font-weight: 700; }
+    .chg-down { color: var(--red);   font-weight: 700; }
+    .chg-flat { color: var(--muted); }
+
+    footer {
+      text-align: center; font-size: 11px; color: var(--muted);
+      padding: 20px; border-top: 1px solid var(--border); margin-top: 12px;
+    }
+    @media (max-width: 768px) {
+      main { padding: 16px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .charts-grid .full-width { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     ✏️  DATA CONFIG — Edit this block before each business review
+     ════════════════════════════════════════════════════════════ -->
+<script>
+const CONFIG = {
+
+  // ── Hotel Info ──────────────────────────────────────────────
+  hotelName:    "New World Millennium Hong Kong Hotel",
+  reportMonth:  "May 2026",
+  prevMonth:    "April 2026",
+  yoyMonth:     "May 2025",
+  ytdYear:      "2026",
+  ytdPrevYear:  "2025",
+  reportDate:   "21 May 2026",
+
+  // ══════════════════════════════════════════════════════════════
+  // PERFORMANCE SNAPSHOT — 2B Direct + 2C Direct ONLY
+  //
+  // mtd        = Month-to-date (real data)
+  // prev       = Prior month actual
+  // yoy        = Same month last year actual
+  // ytd        = Year-to-date (Jan–May MTD current year)
+  // ytdPrev    = Year-to-date (Jan–May prior year)
+  //
+  // ⚠️  prev / yoy / ytd / ytdPrev below are PLACEHOLDER —
+  //     replace with actuals once historical data is available
+  // ══════════════════════════════════════════════════════════════
+  kpi: {
+    bookings:   { mtd: 14,   prev: 22,   yoy: 19,   ytd: 85,   ytdPrev: 92   },
+    roomNights: { mtd: 31,   prev: 50,   yoy: 42,   ytd: 210,  ytdPrev: 235  },
+    los:        { mtd: 2.1,  prev: 2.3,  yoy: 2.2,  ytd: 2.2,  ytdPrev: 2.1  },
+    leadTime:   { mtd: 52,   prev: 61,   yoy: 49,   ytd: 55,   ytdPrev: 51   },
+    adr:        { mtd: 204,  prev: 218,  yoy: 193,  ytd: 215,  ytdPrev: 200  },
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  // MONTHLY TRENDS — 2C Channels Only (2C Direct + 2C Others)
+  // May MTD values = REAL DATA; Dec–Apr = PLACEHOLDER
+  //
+  // NEW fields:
+  //   marketAdr          — market avg ADR per month (USD)
+  //   losAvg             — hotel avg LOS per month (nights)
+  //   marketLosAvg       — market avg LOS per month (nights)
+  //   leadTimeAvg        — hotel avg lead time per month (days)
+  //   marketLeadTimeAvg  — market avg lead time per month (days)
+  // ══════════════════════════════════════════════════════════════
+  trend: {
+    labels: ["Dec", "Jan", "Feb", "Mar", "Apr", "May MTD"],
+
+    hotelRoomNights:       [3250, 2980, 2540, 3100, 2720,  72],
+    marketRoomNightsIndex: [ 100,   92,   79,   96,   87,  70],  // indexed, Dec=100
+
+    marketAdr:             [ 290,  278,  265,  285,  278, 210],  // placeholder
+    directBookPct:         [28.5, 29.4, 30.1, 32.6, 31.2, 31.7],
+    adr:                   [ 310,  295,  280,  302,  298, 224],
+
+    losAvg:                [2.0,  2.1,  1.9,  2.1,  2.0,  2.1],  // placeholder
+    marketLosAvg:          [2.1,  2.2,  2.0,  2.2,  2.1,  2.0],  // placeholder
+    leadTimeAvg:           [ 42,   44,   43,   45,   44,   52],   // placeholder
+    marketLeadTimeAvg:     [ 38,   40,   39,   41,   40,   42],   // placeholder
+
+    losGroups: {
+      labels: ["1 Night", "2 Nights", "3 Nights", "4–6 Nights", "7+ Nights"],
+      data: [
+        [22, 20, 21, 19, 20, 53],
+        [35, 34, 36, 33, 34, 26],
+        [25, 26, 24, 27, 25, 15],
+        [12, 13, 12, 14, 13,  6],
+        [ 6,  7,  7,  7,  8,  0],
+      ],
+      marketLatest: [20, 38, 26, 11, 5],
+      marketPrev:   [21, 36, 26, 12, 5],
+    },
+
+    leadTimeGroups: {
+      labels: ["Same Day / Next Day", "2–7 Days", "8–14 Days", "15–21 Days", "22–30 Days", "31–60 Days", "61–90 Days", "90+ Days"],
+      // Rows = lead time groups · Columns = months (Dec → May MTD)
+      // May MTD column = real data split into new groups; Dec–Apr = placeholder
+      data: [
+        [ 6,  7,  8,  6,  7,  8],  // Same Day / Next Day
+        [16, 16, 17, 15, 16,  9],  // 2–7 Days
+        [25, 24, 23, 26, 24, 30],  // 8–14 Days
+        [10, 10, 10, 11, 10,  7],  // 15–21 Days
+        [12, 11, 11, 12, 11,  6],  // 22–30 Days
+        [18, 18, 19, 19, 18, 25],  // 31–60 Days
+        [ 9, 10,  8,  8, 10, 10],  // 61–90 Days
+        [ 4,  4,  4,  3,  4,  5],  // 90+ Days
+      ],
+      marketLatest: [ 5, 12, 26, 11, 12, 22,  8,  4],  // placeholder
+      marketPrev:   [ 6, 13, 25, 11, 11, 20,  9,  5],  // placeholder
+    },
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  // COMPETITORS — up to 5
+  //
+  // Add or remove competitor objects below.
+  //
+  // Monthly arrays (6 values) must match trend.labels length.
+  // By-origin arrays (6 values) must match origin.labels length.
+  //
+  // Fields per competitor:
+  //   name           — display name (short)
+  //   color          — hex colour for charts & toggle button
+  //   roomNights     — monthly room nights (absolute)
+  //   los            — monthly avg LOS (nights)
+  //   adrByOrigin    — ADR by origin market (USD) ← shown in Segment Breakdown
+  //   leadTimeByOrigin — avg lead time by origin market (days) ← shown in Segment Breakdown
+  //
+  // ⚠️  All values below are PLACEHOLDER — replace with actuals
+  // ══════════════════════════════════════════════════════════════
+  competitors: [
+    {
+      name: "Comp A",  color: "#8B5CF6",
+      roomNights:          [2800, 2600, 2200, 2700, 2400,  62],
+      adrMonthly:          [ 285,  272,  258,  275,  268, 198],
+      los:                 [ 2.0,  2.1,  1.9,  2.1,  2.0, 1.9],
+      adrByOrigin:         [ 165,  195,  222,  158,  178, 190],
+      leadTimeByOrigin:    [  42,   52,   30,   38,   50,  44],
+      losGroupLatest:      [ 45,   28,   16,    8,    3],           // % per LOS group, current month
+      leadTimeGroupLatest: [  6,   10,   28,    8,    8,  26,  10,  4],  // % per LT group, current month
+    },
+    {
+      name: "Comp B",  color: "#F59E0B",
+      roomNights:          [3100, 2850, 2400, 2950, 2600,  68],
+      adrMonthly:          [ 298,  285,  270,  290,  282, 208],
+      los:                 [ 2.2,  2.3,  2.1,  2.3,  2.2, 2.1],
+      adrByOrigin:         [ 172,  202,  230,  162,  185, 196],
+      leadTimeByOrigin:    [  45,   55,   33,   41,   53,  47],
+      losGroupLatest:      [ 50,   25,   14,    8,    3],           // % per LOS group, current month
+      leadTimeGroupLatest: [  5,   11,   29,    9,    8,  25,   9,  4],  // % per LT group, current month
+    },
+    {
+      name: "Comp C",  color: "#10B981",
+      roomNights:          [2600, 2400, 2050, 2500, 2250,  58],
+      adrMonthly:          [ 275,  265,  252,  268,  260, 192],
+      los:                 [ 1.9,  2.0,  1.8,  2.0,  1.9, 1.8],
+      adrByOrigin:         [ 160,  190,  218,  155,  174, 186],
+      leadTimeByOrigin:    [  40,   50,   28,   36,   48,  42],
+      losGroupLatest:      [ 42,   30,   17,    8,    3],           // % per LOS group, current month
+      leadTimeGroupLatest: [  7,    9,   27,    8,    9,  25,  11,  4],  // % per LT group, current month
+    },
+    // ── Add up to 2 more competitors below ──────────────────────
+    // {
+    //   name: "Comp D",  color: "#3B82F6",
+    //   roomNights: [...], los: [...],
+    //   adrByOrigin: [...], leadTimeByOrigin: [...],
+    // },
+    // {
+    //   name: "Comp E",  color: "#EC4899",
+    //   roomNights: [...], los: [...],
+    //   adrByOrigin: [...], leadTimeByOrigin: [...],
+    // },
+  ],
+
+  // ══════════════════════════════════════════════════════════════
+  // ORIGIN MIX
+  // ══════════════════════════════════════════════════════════════
+  origin: {
+    labels:         ["Hong Kong", "Americas", "Japan", "Southeast Asia", "Taiwan", "Oceania"],
+    hotelBookings:  [12,   14,    4,    12,    3,    2],
+    marketBookings: [6800, 5200, 2900, 2400, 1800, 1200],
+    hotelAdr:       [175,  205,  238,  165,  190,  200],
+    marketAdr:      [170,  195,  225,  158,  180,  192],
+    hotelLos:        [1.9,  1.9,  2.0,  1.9,  2.0,  2.0],
+    marketLos:       [1.8,  2.1,  1.9,  2.0,  2.0,  2.1],
+    hotelLeadTime:   [ 48,   58,   35,   42,   55,   50],  // placeholder per origin
+    marketLeadTime:  [ 42,   52,   30,   38,   50,   45],  // placeholder per origin
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  // FORWARD DEMAND — next 6 check-in months
+  //
+  // Data = bookings already on-the-books for future check-in dates,
+  // captured as of the report date.
+  //
+  // ⚠️  All values below are PLACEHOLDER — replace with actuals
+  // ══════════════════════════════════════════════════════════════
+  forward: {
+    startDate: "2026-06-01",  // first check-in date shown
+    days: 92,                  // Jun 1 – Aug 31 (3 months)
+
+    // ── Replace with actual on-the-books data ──────────────────────
+    // Both arrays must have exactly `days` values.
+    // Values should be normalised/indexed — do NOT use raw absolutes.
+    // Suggested: set your hotel's busiest day in the window = 100,
+    //            then express every other day relative to that.
+    //            Do the same independently for the market series.
+    // Leave as null to show deterministic placeholder curves.
+    hotelDemandIndex:  null,  // array of `days` values, or null
+    marketDemandIndex: null,  // array of `days` values, or null
+  },
+
+  // ── Key Insights ────────────────────────────────────────────
+  insights: [
+    "May MTD 2026: 14 direct bookings (2B+2C Direct), 31 room nights, ADR $204 — prev/YoY comparisons based on estimates pending full-month data pull.",
+    "YTD 2026: 85 bookings, 210 room nights, ADR $215 — all metrics tracking below prior year pace; confirm with actuals.",
+    "Short-stay demand dominates: 53% of 2C bookings are 1-night stays, significantly above the typical market mix.",
+    "Strong advance purchase trend: 40% of bookings made 31+ days ahead, indicating forward demand confidence.",
+    "Direct booking rate at 31.7% (2C Direct / total 2C) — monitor vs prior months once historical data is loaded.",
+  ],
+
+};
+</script>
+<!-- ════════════════════════════════════════════════════════════
+     End of data config
+     ════════════════════════════════════════════════════════════ -->
+
+<header>
+  <div class="logo">
+    <div class="logo-k">K</div>
+    <span>KLOOK</span>
+  </div>
+  <div class="header-right">
+    <strong id="hdr-hotel">–</strong>
+    <span id="hdr-date">–</span>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>
+    <span>Hotel Business Review</span>
+    <span id="hero-hotel">–</span>
+  </h1>
+  <div class="period-badge" id="hero-period">–</div>
+</div>
+
+<main>
+
+  <!-- ── Performance Snapshot ──────────────────────────────────── -->
+  <div class="section-title">Performance Snapshot</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="insight-box" id="insight-box" style="display:none">
+    <h4>💡 Key Insights</h4>
+    <ul id="insight-list"></ul>
+  </div>
+
+  <!-- ── Monthly Trends ─────────────────────────────────────────── -->
+  <div class="section-title">Monthly Trends</div>
+
+  <!-- Competitor Selector -->
+  <div class="comp-panel" id="comp-panel">
+    <div class="comp-panel-header">
+      <span class="comp-panel-title">🏨 Competitor Benchmarking</span>
+      <span class="comp-panel-hint" id="comp-hint">Select up to 5 competitors to overlay avg on charts</span>
+    </div>
+    <div class="comp-btns" id="comp-btns"></div>
+  </div>
+
+  <div class="charts-grid" style="margin-top:18px">
+
+    <!-- Room Nights: Hotel vs Market vs Comp Avg -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Room Nights — Hotel vs Market vs Comp Avg</div>
+          <div class="chart-subtitle">Hotel room nights (bar) · Market trend index (line, Dec=100) · Comp avg room nights (dashed line)</div>
+        </div>
+        <span class="chart-tag">Volume</span>
+      </div>
+      <canvas id="chartRoomNights" height="210"></canvas>
+      <div class="data-note">ⓘ Market room nights are not disclosed — indexed trend only. Competitor avg uses absolute room night values on the left axis.</div>
+    </div>
+
+    <!-- Direct Booking % -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Direct Booking %</div>
+          <div class="chart-subtitle">Klook direct supply booking / total booking × 100</div>
+        </div>
+        <span class="chart-tag">Channel Mix</span>
+      </div>
+      <canvas id="chartDirectBook" height="210"></canvas>
+    </div>
+
+    <!-- ADR: Hotel vs Market vs Comp Avg -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">ADR — Hotel vs Market vs Comp Avg</div>
+          <div class="chart-subtitle">USD monthly average · hotel bar, market line, comp avg dashed · comp by origin in Segment Breakdown below</div>
+        </div>
+        <span class="chart-tag">Pricing</span>
+      </div>
+      <canvas id="chartAdr" height="210"></canvas>
+    </div>
+
+
+    <!-- LOS Distribution (stacked) -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Length of Stay — Booking Share by Group</div>
+          <div class="chart-subtitle">% share of bookings per month · MoM change + market comparison below</div>
+        </div>
+        <span class="chart-tag">LOS Mix</span>
+      </div>
+      <canvas id="chartLos" height="120"></canvas>
+      <table class="mom-table" id="losMomTable"></table>
+    </div>
+
+    <!-- Lead Time Distribution (stacked) -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Lead Time — Booking Share by Group</div>
+          <div class="chart-subtitle">% share of bookings per month · MoM change + market comparison below</div>
+        </div>
+        <span class="chart-tag">Booking Window</span>
+      </div>
+      <canvas id="chartLeadTime" height="150"></canvas>
+      <table class="mom-table" id="leadMomTable"></table>
+    </div>
+
+  </div>
+
+  <!-- ── Origin Mix ─────────────────────────────────────────────── -->
+  <div class="section-title">Origin Mix</div>
+  <div class="charts-grid">
+
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Booking Volume by Origin — Hotel vs Market (MTD)</div>
+          <div class="chart-subtitle">% share of total bookings per source market · hover for actual booking counts</div>
+        </div>
+        <span class="chart-tag">Origin</span>
+      </div>
+      <canvas id="chartOrigin" height="120"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">ADR by Origin Market</div>
+          <div class="chart-subtitle">USD · hotel vs market average by source market (MTD)</div>
+        </div>
+        <span class="chart-tag">ADR</span>
+      </div>
+      <canvas id="chartOriginAdr" height="220"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">LOS by Origin Market</div>
+          <div class="chart-subtitle">Avg nights · hotel vs market average (MTD)</div>
+        </div>
+        <span class="chart-tag">LOS</span>
+      </div>
+      <canvas id="chartOriginLos" height="220"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Lead Time by Origin Market</div>
+          <div class="chart-subtitle">Avg booking lead time (days) · hotel vs market average by source market (MTD)</div>
+        </div>
+        <span class="chart-tag">Lead Time</span>
+      </div>
+      <canvas id="chartOriginLeadTime" height="220"></canvas>
+    </div>
+
+  </div>
+
+
+  <!-- ── Forward Demand ──────────────────────────────────────────── -->
+  <div class="section-title">Forward Demand — Next 6 Months (by Check-in Date)</div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Booking Production — Next 6 Months</div>
+        <div class="chart-subtitle">
+          Relative daily demand by check-in date (Jun – Aug 2026) · as of <span id="fwd-report-date">–</span> ·
+          highlights high-demand dates across hotel and market
+        </div>
+      </div>
+      <span class="chart-tag">Forward Demand</span>
+    </div>
+    <canvas id="chartFwdPickup" height="180"></canvas>
+    <div class="data-note">
+      ⓘ Both series are indexed — values show relative demand, not absolute volumes. Peaks identify high check-in date demand. Replace CONFIG.forward.hotelDemandIndex and marketDemandIndex with actual on-the-books data.
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Prepared by Klook Partner Services · <span id="footer-date">–</span> ·
+  Data source: Klook Internal Dashboard (MTD vs prior periods)
+</footer>
+
+<script>
+/* ── Helpers ─────────────────────────────────────────────────────── */
+function pct(a,b)   { return b ? (a-b)/b*100 : 0; }
+function pp(a,b)    { return a-b; }
+function fmt(v,d=0) { return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function dCls(v)    { return v>0.5?'up':v<-0.5?'down':'flat'; }
+function arrow(v)   { return v>0.5?'▲':v<-0.5?'▼':'—'; }
+function chgCls(v)  { return Math.abs(v)<0.5?'chg-flat':v>0?'chg-up':'chg-down'; }
+function chgStr(v)  { return (v>0?'+':'')+fmt(v,1)+'pp'; }
+function vsStr(h,m) { const d=h-m; return (d>0?'+':'')+fmt(d,1)+'pp'; }
+function vsCls(h,m) { const d=h-m; return Math.abs(d)<0.5?'chg-flat':d>0?'chg-up':'chg-down'; }
+
+/* ── Header / Hero ───────────────────────────────────────────────── */
+document.getElementById('hdr-hotel').textContent   = CONFIG.hotelName;
+document.getElementById('hdr-date').textContent    = CONFIG.reportDate;
+document.getElementById('hero-hotel').textContent  = CONFIG.hotelName;
+document.getElementById('footer-date').textContent = CONFIG.reportDate;
+document.getElementById('hero-period').textContent =
+  `MTD ${CONFIG.reportMonth}  ·  vs ${CONFIG.prevMonth}  ·  vs ${CONFIG.yoyMonth}`;
+
+/* ── Performance Snapshot KPI Cards ─────────────────────────────── */
+const KPI_DEFS = [
+  { key:'bookings',   label:'Bookings',      fmtFn:v=>fmt(v),   suffix:'',     prefix:''  },
+  { key:'roomNights', label:'Room Nights',   fmtFn:v=>fmt(v),   suffix:'',     prefix:''  },
+  { key:'los',        label:'Avg LOS',       fmtFn:v=>fmt(v,1), suffix:' nts', prefix:''  },
+  { key:'leadTime',   label:'Avg Lead Time', fmtFn:v=>fmt(v),   suffix:' days',prefix:''  },
+  { key:'adr',        label:'ADR',           fmtFn:v=>fmt(v),   suffix:'',     prefix:'$' },
+];
+const grid = document.getElementById('kpi-grid');
+KPI_DEFS.forEach(d => {
+  const {mtd, prev, yoy, ytd, ytdPrev} = CONFIG.kpi[d.key];
+  const momD  = pct(mtd, prev);
+  const yoyD  = pct(mtd, yoy);
+  const ytdD  = pct(ytd, ytdPrev);
+  const card  = document.createElement('div');
+  card.className = 'kpi-card';
+  card.innerHTML = `
+    <div class="kpi-label">${d.label}</div>
+
+    <div class="kpi-period-tag">MTD ${CONFIG.reportMonth}</div>
+    <div class="kpi-value">${d.prefix}${d.fmtFn(mtd)}<sub>${d.suffix}</sub></div>
+    <div class="kpi-comparisons">
+      <div class="kpi-row">
+        <span class="kpi-row-label">vs ${CONFIG.prevMonth}</span>
+        <span class="kpi-delta ${dCls(momD)}">${arrow(momD)} ${Math.abs(momD).toFixed(1)}%</span>
+      </div>
+      <div class="kpi-row">
+        <span class="kpi-row-label">vs ${CONFIG.yoyMonth}</span>
+        <span class="kpi-delta ${dCls(yoyD)}">${arrow(yoyD)} ${Math.abs(yoyD).toFixed(1)}%</span>
+      </div>
+    </div>
+
+    <hr class="kpi-divider">
+
+    <div class="kpi-ytd-tag">YTD ${CONFIG.ytdYear}</div>
+    <div class="kpi-ytd-value">${d.prefix}${d.fmtFn(ytd)}<sub>${d.suffix}</sub></div>
+    <div class="kpi-ytd-comparisons">
+      <div class="kpi-row">
+        <span class="kpi-row-label">vs YTD ${CONFIG.ytdPrevYear}</span>
+        <span class="kpi-delta ${dCls(ytdD)}">${arrow(ytdD)} ${Math.abs(ytdD).toFixed(1)}%</span>
+      </div>
+    </div>`;
+  grid.appendChild(card);
+});
+
+/* ── Insights ────────────────────────────────────────────────────── */
+const insights = CONFIG.insights.filter(s=>s.trim());
+if (insights.length) {
+  const box = document.getElementById('insight-box');
+  const lst = document.getElementById('insight-list');
+  box.style.display = '';
+  insights.forEach(t=>{const li=document.createElement('li');li.textContent=t;lst.appendChild(li);});
+}
+
+/* ── Chart defaults ──────────────────────────────────────────────── */
+Chart.defaults.font.family = "'Segoe UI',system-ui,sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#6B7280';
+const RED    = '#FF5722', RED_T  = 'rgba(255,87,34,.12)';
+const BLUE   = '#3B82F6', BLU_T  = 'rgba(59,130,246,.15)';
+const GREEN  = '#10B981', GRN_T  = 'rgba(16,185,129,.12)';
+const PURPLE = '#8B5CF6', PUR_T  = 'rgba(139,92,246,.15)';
+const STACK_COLORS = ['#FF5722','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#06B6D4','#78716C'];
+const BASE = {
+  responsive: true,
+  plugins: { legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } } },
+  scales: { x:{ grid:{display:false} }, y:{ grid:{color:'#F3F4F6'}, ticks:{padding:6} } },
+};
+
+/* ── Competitor state & helpers ─────────────────────────────────── */
+const compActive = CONFIG.competitors.map(()=>true);  // all on by default
+
+function activeComps() {
+  return CONFIG.competitors.filter((_,i)=>compActive[i]);
+}
+
+function compAvgArray(metric) {
+  const active = activeComps();
+  if (!active.length) return null;
+  const n = CONFIG.trend.labels.length;
+  return Array.from({length:n}, (_,i) =>
+    +(active.reduce((s,c)=>s+c[metric][i], 0) / active.length).toFixed(2)
+  );
+}
+
+// Average competitor values across origin markets (for segment breakdown charts)
+function compAvgByOrigin(metric) {
+  const active = activeComps();
+  if (!active.length) return null;
+  const n = CONFIG.origin.labels.length;
+  return Array.from({length:n}, (_,i) =>
+    +(active.reduce((s,c)=>s+c[metric][i], 0) / active.length).toFixed(2)
+  );
+}
+
+/* ── Build competitor selector UI ───────────────────────────────── */
+const btnContainer = document.getElementById('comp-btns');
+if (!CONFIG.competitors.length) {
+  btnContainer.innerHTML = '<span class="no-comps-msg">No competitors configured — add entries to CONFIG.competitors to enable benchmarking.</span>';
+} else {
+  CONFIG.competitors.forEach((comp, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'comp-btn active';
+    btn.style.borderColor = comp.color;
+    btn.style.backgroundColor = comp.color;
+    btn.innerHTML = `<span class="comp-dot" style="background:rgba(255,255,255,.7)"></span>${comp.name}`;
+    btn.addEventListener('click', () => {
+      compActive[idx] = !compActive[idx];
+      if (compActive[idx]) {
+        btn.classList.add('active');
+        btn.style.backgroundColor = comp.color;
+      } else {
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = comp.color;
+      }
+      updateCompCharts();
+    });
+    btnContainer.appendChild(btn);
+  });
+}
+
+/* ── Stored chart references (for competitor updates) ───────────── */
+let chartRoomNights, chartAdr;
+
+/* ── Room Nights Chart ───────────────────────────────────────────── */
+chartRoomNights = new Chart(document.getElementById('chartRoomNights'), {
+  type: 'bar',
+  data: {
+    labels: CONFIG.trend.labels,
+    datasets: [
+      {
+        type: 'bar', label: 'Hotel Room Nights',
+        data: CONFIG.trend.hotelRoomNights,
+        backgroundColor: RED, borderRadius: 5, barPercentage: .6, yAxisID: 'y',
+      },
+      {
+        type: 'line', label: 'Market Trend Index (Dec=100)',
+        data: CONFIG.trend.marketRoomNightsIndex,
+        borderColor: BLUE, backgroundColor: BLU_T,
+        tension: .35, pointBackgroundColor: BLUE, pointRadius: 5,
+        borderWidth: 2.5, fill: false, yAxisID: 'y2',
+      },
+      {
+        type: 'line', label: 'Comp Avg Room Nights',
+        data: compAvgArray('roomNights') || [],
+        borderColor: PURPLE, backgroundColor: PUR_T,
+        borderDash: [5,4], tension: .35,
+        pointBackgroundColor: PURPLE, pointRadius: 4,
+        borderWidth: 2, fill: false, yAxisID: 'y',
+        hidden: !activeComps().length,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend:{ position:'bottom', labels:{ boxWidth:12, padding:14 } } },
+    scales: {
+      x:  { grid:{display:false} },
+      y:  { grid:{color:'#F3F4F6'}, ticks:{padding:6}, title:{display:true, text:'Room Nights'} },
+      y2: { position:'right', grid:{drawOnChartArea:false}, title:{display:true, text:'Market Index'} },
+    },
+  },
+});
+
+/* ── Direct Booking % Chart ─────────────────────────────────────── */
+new Chart(document.getElementById('chartDirectBook'), {
+  type: 'line',
+  data: {
+    labels: CONFIG.trend.labels,
+    datasets: [{
+      label: 'Direct Booking %', data: CONFIG.trend.directBookPct,
+      borderColor: GREEN, backgroundColor: GRN_T,
+      tension: .35, pointBackgroundColor: GREEN, fill: true, pointRadius: 5, borderWidth: 2,
+    }],
+  },
+  options: { ...BASE, scales: { x:{grid:{display:false}}, y:{grid:{color:'#F3F4F6'}, ticks:{callback:v=>v+'%', padding:6}} } },
+});
+
+/* ── ADR Chart (monthly trend — hotel vs market vs comp avg) ─────── */
+chartAdr = new Chart(document.getElementById('chartAdr'), {
+  type: 'bar',
+  data: {
+    labels: CONFIG.trend.labels,
+    datasets: [
+      {
+        type: 'bar', label: 'Hotel ADR (USD)',
+        data: CONFIG.trend.adr,
+        backgroundColor: CONFIG.trend.labels.map((_,i,a) => i===a.length-1 ? RED : 'rgba(255,87,34,.35)'),
+        borderRadius: 5, barPercentage: .55,
+      },
+      {
+        type: 'line', label: 'Market ADR (USD)',
+        data: CONFIG.trend.marketAdr,
+        borderColor: BLUE, backgroundColor: 'transparent',
+        tension: .35, pointBackgroundColor: BLUE, pointRadius: 4,
+        borderWidth: 2, fill: false,
+      },
+      {
+        type: 'line', label: 'Comp Avg ADR (USD)',
+        data: compAvgArray('adrMonthly') || [],
+        borderColor: PURPLE, backgroundColor: 'transparent',
+        borderDash: [5,4], tension: .35,
+        pointBackgroundColor: PURPLE, pointRadius: 4,
+        borderWidth: 2, fill: false,
+        hidden: !activeComps().length,
+      },
+    ],
+  },
+  options: {
+    ...BASE,
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'#F3F4F6'}, ticks:{callback:v=>'$'+v, padding:6} },
+    },
+  },
+});
+
+
+/* ── Update competitor overlays on toggle ───────────────────────── */
+function updateCompCharts() {
+  const show = !!activeComps().length;
+
+  // Monthly Trends: Room Nights (dataset index 2 = comp avg)
+  chartRoomNights.data.datasets[2].data   = compAvgArray('roomNights') || [];
+  chartRoomNights.data.datasets[2].hidden = !show;
+  chartRoomNights.update();
+
+  // Monthly Trends: ADR (dataset index 2 = comp avg)
+  chartAdr.data.datasets[2].data   = compAvgArray('adrMonthly') || [];
+  chartAdr.data.datasets[2].hidden = !show;
+  chartAdr.update();
+
+  // Breakdown tables: LOS and Lead Time (re-render with/without Comp Avg column)
+  rebuildTables();
+}
+
+/* ── LOS & Lead Time stacked distribution charts ────────────────── */
+function makeStackedBar(canvasId, groupDef, labels) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: groupDef.labels.map((lbl,i) => ({
+        label: lbl, data: groupDef.data[i],
+        backgroundColor: STACK_COLORS[i], borderRadius: 2, borderWidth: 0,
+      })),
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+        tooltip: { callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}%` } },
+      },
+      scales: {
+        x: { stacked:true, grid:{display:false} },
+        y: { stacked:true, grid:{color:'#F3F4F6'}, max:100, ticks:{callback:v=>v+'%', padding:6} },
+      },
+    },
+  });
+}
+
+// Build (or re-build) a MoM breakdown table, including a Comp Avg column when competitors are active.
+// compMetric = the key on each competitor object holding their group % array for the current month.
+function buildMomTable(tableId, groupDef, trendLabels, compMetric) {
+  const tbl  = document.getElementById(tableId);
+  tbl.innerHTML = '';  // clear for re-renders
+  const n    = trendLabels.length;
+  const prev = n - 2, curr = n - 1;
+
+  // Compute competitor avg per group (null when no competitors active)
+  const active = activeComps();
+  const compAvg = active.length
+    ? groupDef.labels.map((_, i) =>
+        +(active.reduce((s,c) => s + (c[compMetric][i] || 0), 0) / active.length).toFixed(1))
+    : null;
+
+  const hRow = tbl.insertRow();
+  hRow.innerHTML = `
+    <th>Group</th>
+    <th>Hotel ${trendLabels[prev]}</th>
+    <th>Hotel ${trendLabels[curr]}</th>
+    <th>MoM Change</th>
+    <th class="col-market">Market ${trendLabels[curr]}</th>
+    <th class="col-market">vs Market</th>
+    ${compAvg ? `<th class="col-comp">Comp Avg ${trendLabels[curr]}</th><th class="col-comp">vs Comp Avg</th>` : ''}`;
+
+  groupDef.labels.forEach((lbl, i) => {
+    const pVal = groupDef.data[i][prev];
+    const cVal = groupDef.data[i][curr];
+    const mVal = groupDef.marketLatest[i];
+    const mom  = pp(cVal, pVal);
+    const compCells = compAvg
+      ? `<td class="col-comp">${compAvg[i]}%</td>
+         <td class="col-comp ${vsCls(cVal, compAvg[i])}">${vsStr(cVal, compAvg[i])}</td>`
+      : '';
+    const tr = tbl.insertRow();
+    tr.innerHTML = `
+      <td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${STACK_COLORS[i]};margin-right:6px"></span>${lbl}</td>
+      <td>${pVal}%</td>
+      <td>${cVal}%</td>
+      <td class="${chgCls(mom)}">${chgStr(mom)}</td>
+      <td class="col-market">${mVal}%</td>
+      <td class="col-market ${vsCls(cVal,mVal)}">${vsStr(cVal,mVal)}</td>
+      ${compCells}`;
+  });
+}
+
+function rebuildTables() {
+  buildMomTable('losMomTable',  CONFIG.trend.losGroups,      CONFIG.trend.labels, 'losGroupLatest');
+  buildMomTable('leadMomTable', CONFIG.trend.leadTimeGroups, CONFIG.trend.labels, 'leadTimeGroupLatest');
+}
+
+makeStackedBar('chartLos',      CONFIG.trend.losGroups,      CONFIG.trend.labels);
+makeStackedBar('chartLeadTime', CONFIG.trend.leadTimeGroups, CONFIG.trend.labels);
+rebuildTables();  // initial render
+
+/* ── Origin Mix Charts ───────────────────────────────────────────── */
+const orig      = CONFIG.origin;
+const hotelTot  = orig.hotelBookings.reduce((a,b)=>a+b,0);
+const marketTot = orig.marketBookings.reduce((a,b)=>a+b,0);
+const hotelPct  = orig.hotelBookings.map(v=>+(v/hotelTot*100).toFixed(1));
+const marketPct = orig.marketBookings.map(v=>+(v/marketTot*100).toFixed(1));
+
+new Chart(document.getElementById('chartOrigin'), {
+  type: 'bar',
+  data: {
+    labels: orig.labels,
+    datasets: [
+      { label:`${CONFIG.hotelName} — % Share`, data:hotelPct,  backgroundColor:RED,  borderRadius:4, barPercentage:.55 },
+      { label:'Market Average — % Share',       data:marketPct, backgroundColor:BLUE, borderRadius:4, barPercentage:.55 },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+      tooltip: { callbacks:{ label:ctx => ctx.datasetIndex===0
+        ? ` Hotel: ${ctx.parsed.y}%  (${orig.hotelBookings[ctx.dataIndex].toLocaleString()} bookings)`
+        : ` Market: ${ctx.parsed.y}%  (${orig.marketBookings[ctx.dataIndex].toLocaleString()} bookings)` } },
+    },
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'#F3F4F6'}, ticks:{callback:v=>v+'%', padding:6}, title:{display:true, text:'% Share of Total Bookings'} },
+    },
+  },
+});
+
+new Chart(document.getElementById('chartOriginAdr'), {
+  type: 'bar',
+  data: {
+    labels: orig.labels,
+    datasets: [
+      { label:'Hotel ADR',  data:orig.hotelAdr,  backgroundColor:RED,  borderRadius:4, barPercentage:.55 },
+      { label:'Market ADR', data:orig.marketAdr, backgroundColor:BLUE, borderRadius:4, barPercentage:.55 },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+      tooltip: { callbacks:{ afterBody:items => {
+        const h = orig.hotelAdr[items[0].dataIndex];
+        const m = orig.marketAdr[items[0].dataIndex];
+        const d = h - m;
+        return `Hotel vs Market: ${d>=0?'+':''}$${d.toFixed(0)}`;
+      }}},
+    },
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'#F3F4F6'}, ticks:{callback:v=>'$'+v, padding:6}, title:{display:true, text:'ADR (USD)'} },
+    },
+  },
+});
+
+new Chart(document.getElementById('chartOriginLos'), {
+  type: 'bar',
+  data: {
+    labels: orig.labels,
+    datasets: [
+      { label:'Hotel LOS',  data:orig.hotelLos,  backgroundColor:RED,  borderRadius:4, barPercentage:.55 },
+      { label:'Market LOS', data:orig.marketLos, backgroundColor:BLUE, borderRadius:4, barPercentage:.55 },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+      tooltip: { callbacks:{ afterBody:items => {
+        if (items.length < 2) return '';
+        const d = orig.hotelLos[items[0].dataIndex] - orig.marketLos[items[0].dataIndex];
+        return `vs Market: ${d>=0?'+':''}${d.toFixed(1)} nts`;
+      }}},
+    },
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'#F3F4F6'}, ticks:{callback:v=>v+' nts', padding:6}, title:{display:true, text:'Avg LOS (nights)'} },
+    },
+  },
+});
+
+/* ── Lead Time by Origin — Hotel vs Market vs Comp Avg ──────────── */
+new Chart(document.getElementById('chartOriginLeadTime'), {
+  type: 'bar',
+  data: {
+    labels: orig.labels,
+    datasets: [
+      { label:'Hotel Lead Time',  data:orig.hotelLeadTime,  backgroundColor:RED,  borderRadius:4, barPercentage:.55 },
+      { label:'Market Lead Time', data:orig.marketLeadTime, backgroundColor:BLUE, borderRadius:4, barPercentage:.55 },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+      tooltip: { callbacks:{ afterBody:items => {
+        const h = orig.hotelLeadTime[items[0].dataIndex];
+        const m = orig.marketLeadTime[items[0].dataIndex];
+        const d = h - m;
+        return `Hotel vs Market: ${d>=0?'+':''}${d.toFixed(0)} days`;
+      }}},
+    },
+    scales: {
+      x: { grid:{display:false} },
+      y: { grid:{color:'#F3F4F6'}, ticks:{callback:v=>v+' d', padding:6}, title:{display:true, text:'Avg Lead Time (days)'} },
+    },
+  },
+});
+/* ── Forward Demand Chart (daily, 3 months) ──────────────────────── */
+document.getElementById('fwd-report-date').textContent = CONFIG.reportDate;
+
+(function() {
+  const fwd = CONFIG.forward;
+  const N   = fwd.days;
+
+  // Build date labels: "Jun 1", "Jun 2", … "Aug 31"
+  function buildLabels(startStr, n) {
+    const out = [], d = new Date(startStr + 'T00:00:00');
+    for (let i = 0; i < n; i++) {
+      out.push(d.toLocaleString('en-US', {month:'short'}) + ' ' + d.getDate());
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }
+
+  // Deterministic placeholder (no Math.random — same curve every load)
+  // dow offset: Jun 1 2026 = Monday → startDow = 1 (0 = Sun)
+  function placeholder(n, base, wkBoost, peakDay, peakBoost) {
+    const startDow = 1;
+    return Array.from({length: n}, (_, i) => {
+      const dow  = (startDow + i) % 7;
+      const wk   = (dow === 0 || dow === 6) ? wkBoost : 0;
+      const peak = Math.max(0, peakBoost - Math.abs(i - peakDay) * 1.5);
+      return Math.round(base + wk + peak);
+    });
+  }
+
+  const labels     = buildLabels(fwd.startDate, N);
+  const hotelData  = fwd.hotelDemandIndex  || placeholder(N, 55, 30, 39, 45);  // peaks ~Jul 9
+  const marketData = fwd.marketDemandIndex || placeholder(N, 70, 20, 43, 40);  // peaks ~Jul 13
+
+  new Chart(document.getElementById('chartFwdPickup'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Hotel',
+          data: hotelData,
+          borderColor: RED, backgroundColor: RED_T,
+          borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 5,
+          tension: 0.35, fill: true,
+        },
+        {
+          label: 'Market',
+          data: marketData,
+          borderColor: BLUE, backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 5,
+          tension: 0.35, fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'bottom', labels:{ boxWidth:12, padding:14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display:false },
+          ticks: { maxTicksLimit:14, maxRotation:0 },  // ~1 label per week
+        },
+        y: {
+          grid: { color:'#F3F4F6' },
+          title: { display:true, text:'Relative Demand' },
+          ticks: { padding:6 },
+        },
+      },
+    },
+  });
+})();
+
+</script>
+</body>
+</html>
